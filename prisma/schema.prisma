@@ -1,0 +1,153 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "file:./dev.db"
+}
+
+// 1. 用户模型
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // Hashed password
+  avatar    String?  // Avatar URL
+  createdAt DateTime @default(now())
+
+  // 反向关系
+  messages     Message[]
+  reactions    Reaction[]
+  messageReads MessageRead[]
+  devices      Device[]
+  mentions     Mention[]     // 新增：被提及的记录
+  bookmarks    Bookmark[]    // 新增：收藏记录
+}
+
+// 设备/会话管理 (多端同步 & 强制下线) [1]
+model Device {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  socketId     String?  // 当前连接的 Socket ID
+  deviceInfo   String?  // e.g. "Chrome on Windows"
+  lastActiveAt DateTime @default(now())
+  token        String?  // Refresh Token
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 2. 消息模型
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String?  // 文本内容
+  type      String   @default("text") // text, image, file
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)  // 软删除
+  
+  // 高级功能字段
+  expiresAt    DateTime? // 阅后即焚 [1]
+  isPinned     Boolean   @default(false) // 消息置顶 [1]
+  wasPinned    Boolean   @default(false) // 删除前是否置顶 (用于恢复)
+  linkMetadata String?   // 新增：URL 预览元数据 (JSON String: {title, image, description}) [1]
+
+  // 关联用户
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Threading / 回复引用
+  parentId  Int?
+  parent    Message?  @relation("Thread", fields: [parentId], references: [id])
+  children  Message[] @relation("Thread")
+
+  // 关联子表
+  reactions   Reaction[]
+  attachments Attachment[]
+  readBy      MessageRead[]    // 已读回执 [1]
+  editHistory MessageHistory[] // 编辑历史 [1]
+  mentions    Mention[]        // 新增：提及记录 [1]
+  bookmarks   Bookmark[]       // 新增：收藏记录
+}
+
+// 新增：收藏功能 (个人私有)
+model Bookmark {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  messageId Int
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+}
+
+// 新增：结构化提及 (High Performance @Mentions) [1]
+model Mention {
+  id        Int      @id @default(autoincrement())
+  userId    Int      // 被提及的用户
+  messageId Int      // 来源消息
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  // 复合唯一键：防止重复提及
+  @@unique([userId, messageId])
+}
+
+// 消息编辑历史 [1]
+model MessageHistory {
+  id          Int      @id @default(autoincrement())
+  messageId   Int
+  oldContent  String
+  editedAt    DateTime @default(now())
+
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+// 已读回执 (精准状态感知) [1]
+model MessageRead {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  userId    Int
+  readAt    DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+}
+
+// 表情表态
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  emoji     String
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  messageId Int
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId, emoji])
+}
+
+// 附件
+model Attachment {
+  id        Int      @id @default(autoincrement())
+  url       String
+  filename  String
+  mimeType  String
+  size      Int
+  originalUrl String? // Original file URL (for images)
+  createdAt DateTime @default(now())
+
+  messageId Int
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* 1. 确保全屏布局稳固 */
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* 防止最外层出现滚动条，滚动交由内部容器处理 */
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+}
+
+@layer utilities {
+  /* 2. 工业级滚动条 (Webkit) */
+  /* 对应组件中的 scrollbar-thin 效果 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+    border: 2px solid transparent; /* 增加透明边框产生一种"悬浮"感 */
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+
+  /* 3. 补齐组件中用到的自定义动画 (如果没有安装 tailwindcss-animate 插件) */
+  
+  /* 淡入效果 */
+  .fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+  
+  /* 底部滑入 (用于回复框弹出) */
+  .slide-in-from-bottom-2 {
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  /* 缩放进入 (用于表情菜单) */
+  .zoom-in-50 {
+    animation: zoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+/* 动画关键帧定义 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 4. Markdown 样式微调 (针对 MessageBubble) */
+/* 确保代码块背景正确 */
+.prose pre {
+  @apply bg-gray-100 border border-gray-200 text-gray-800;
+}
+
+/* 调整 Markdown 内的链接颜色 */
+.prose a {
+  @apply text-blue-600 no-underline hover:underline;
+}
+
+/* 调整 Markdown 内的段落间距 */
+.prose p {
+  @apply my-1;
+}
