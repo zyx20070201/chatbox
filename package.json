@@ -4,7 +4,8 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "nodemon server/index.js", 
+    "dev": "nodemon server/index.js",
+    "postinstall": "prisma generate",
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
