@@ -16,6 +16,7 @@ const { PrismaClient } = require('@prisma/client');
 const { verifyPassword, generateToken, verifyToken } = require('./utils');
 
 const app = express();
+app.set('trust proxy', 1)
 const server = http.createServer(app);
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'nexus-secret-key-2024';
