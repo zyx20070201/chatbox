@@ -382,7 +382,7 @@ app.get('/api/messages', authenticateToken, async (req, res) => { // 鉴权以�
   const cursor = req.query.cursor ? parseInt(req.query.cursor) : undefined;
   try {
     const messages = await prisma.message.findMany({
-      take: 20,
+      take: 2000,
       skip: cursor ? 1 : 0,
       cursor: cursor ? { id: cursor } : undefined,
       orderBy: { createdAt: 'desc' },
