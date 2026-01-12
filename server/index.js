@@ -27,7 +27,16 @@ const io = new Server(server, {
 });
 
 // --- 工业级安全配置 ---
-app.use(cors());
+const corsOptions = {
+  origin: true, // 允许任何来源 (解决 chatbox1 访问 chatbox 的问题)
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true // 允许携带 Token
+};
+
+app.use(cors(corsOptions));          // 1. 应用规则
+app.options('*', cors(corsOptions)); // 2. 【关键】强制处理 OPTIONS 预检请求
+
 app.use(express.json({ limit: '10mb' })); // 限制 Payload 大小
 
 // 统一的 HTML 清洗配置
